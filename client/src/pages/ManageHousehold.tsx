@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { EbAndFlowLogo } from "../components/EbAndFlowLogo";
+import { AppHeader } from "../components/AppHeader";
 import { api } from "../api";
 import { useAuth } from "../auth";
-import { ThemeToggle } from "../theme";
 
 export function ManageHousehold() {
-  const { user, logout, refreshUser } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [householdName, setHouseholdName] = useState("");
   const [savingName, setSavingName] = useState(false);
   const [memberFormValid, setMemberFormValid] = useState(false);
@@ -103,40 +102,33 @@ export function ManageHousehold() {
 
   return (
     <div className="min-h-[100dvh] bg-paper">
-      <header className="chromatic-header sticky top-0 z-10 border-b border-border bg-card/90 backdrop-blur-md">
-        <div className="safe-x safe-t mx-auto grid max-w-3xl grid-cols-[1fr_auto_1fr] items-center gap-2 pb-3 sm:gap-3 sm:pb-4">
-          <div className="min-w-0 justify-self-start">
+      <AppHeader
+        left={
+          <>
             <Link
               to="/"
-              className="mb-1 inline-flex min-h-11 items-center text-sm font-medium text-accent hover:underline"
+              className="inline-flex items-center text-sm font-medium leading-tight text-accent hover:underline"
             >
               ← Dashboard
             </Link>
-            <p className="truncate text-sm text-muted">{user?.username}</p>
-          </div>
-          <div className="flex min-w-0 items-center justify-center gap-2 justify-self-center px-0.5">
-            <EbAndFlowLogo decorative className="shrink-0 text-ink" />
-            <p className="font-display text-lg font-semibold text-ink sm:text-xl">
-              Ebb and Flow
+            <p className="truncate text-sm leading-tight text-muted">
+              {user?.username}
             </p>
-          </div>
-          <div className="flex shrink-0 flex-wrap items-center justify-end justify-self-end gap-0.5 sm:gap-1">
-            <ThemeToggle />
-            <button
-              type="button"
-              onClick={logout}
-              className="btn-ghost shrink-0 text-sm sm:text-base"
-            >
-              Sign out
-            </button>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <main className="safe-x safe-b page-y mx-auto w-full max-w-3xl">
-        <h1 className="font-display mb-6 text-2xl font-semibold text-ink sm:mb-8 sm:text-3xl">
-          Manage household
-        </h1>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
+            Manage household
+          </h1>
+          {user?.household?.name ? (
+            <p className="mt-2 truncate text-lg font-medium text-ink">
+              {user.household.name}
+            </p>
+          ) : null}
+        </div>
         {error && (
           <div
             className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 shadow-sm dark:border-red-400/60 dark:bg-red-950/70 dark:text-red-50 dark:shadow-[0_0_32px_rgba(255,60,120,0.45),0_0_60px_rgba(239,68,68,0.2)]"

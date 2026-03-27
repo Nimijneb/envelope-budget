@@ -2,8 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../auth";
-import { EbAndFlowLogo } from "../components/EbAndFlowLogo";
-import { ThemeToggle } from "../theme";
+import { AppHeader } from "../components/AppHeader";
 import type { EnvelopeSummary } from "./Dashboard";
 
 type ScheduleRow = {
@@ -26,7 +25,7 @@ function formatMoney(cents: number): string {
 }
 
 export function ScheduledTransactions() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [envelopes, setEnvelopes] = useState<EnvelopeSummary[]>([]);
   const [schedules, setSchedules] = useState<ScheduleRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,50 +165,42 @@ export function ScheduledTransactions() {
     }
   }
 
+  const headerLeft = (
+    <>
+      <Link
+        to="/"
+        className="inline-flex items-center text-sm font-medium leading-tight text-accent hover:underline"
+      >
+        ← Dashboard
+      </Link>
+      <p className="truncate text-sm leading-tight text-muted">{user?.username}</p>
+    </>
+  );
+
   if (loading) {
     return (
-      <div className="safe-x safe-t flex min-h-[100dvh] items-center justify-center bg-paper">
-        <p className="text-muted">Loading…</p>
+      <div className="min-h-[100dvh] bg-paper">
+        <AppHeader left={headerLeft} />
+        <main className="safe-x safe-b page-y mx-auto flex w-full max-w-3xl justify-center">
+          <p className="text-muted">Loading…</p>
+        </main>
       </div>
     );
   }
 
   return (
     <div className="min-h-[100dvh] bg-paper">
-      <header className="chromatic-header sticky top-0 z-10 border-b border-border bg-card/90 backdrop-blur-md">
-        <div className="safe-x safe-t mx-auto grid max-w-3xl grid-cols-[1fr_auto_1fr] items-center gap-2 pb-3 sm:gap-3 sm:pb-4">
-          <div className="min-w-0 justify-self-start">
-            <Link
-              to="/"
-              className="mb-1 inline-flex min-h-11 items-center text-sm font-medium text-accent hover:underline"
-            >
-              ← Dashboard
-            </Link>
-            <p className="truncate text-sm text-muted">{user?.username}</p>
-          </div>
-          <div className="flex min-w-0 items-center justify-center gap-2 justify-self-center px-0.5">
-            <EbAndFlowLogo decorative className="shrink-0 text-ink" />
-            <p className="font-display text-lg font-semibold text-ink sm:text-xl">
-              Ebb and Flow
-            </p>
-          </div>
-          <div className="flex shrink-0 flex-wrap items-center justify-end justify-self-end gap-0.5 sm:gap-1">
-            <ThemeToggle />
-            <button
-              type="button"
-              onClick={logout}
-              className="btn-ghost shrink-0 text-sm sm:text-base"
-            >
-              Sign out
-            </button>
-          </div>
-        </div>
-      </header>
+      <AppHeader left={headerLeft} />
 
       <main className="safe-x safe-b page-y mx-auto w-full max-w-3xl">
         <h1 className="font-display mb-2 text-2xl font-semibold text-ink sm:text-3xl">
           Scheduled transactions
         </h1>
+        {user?.household?.name ? (
+          <p className="mb-3 truncate text-base font-medium text-ink sm:mb-4">
+            {user.household.name}
+          </p>
+        ) : null}
         <p className="mb-6 max-w-2xl text-sm text-muted sm:mb-8">
           Each month on the day you choose (or the last day of the month if that
           day does not exist), the app records one Ebb or Flow. You can target any

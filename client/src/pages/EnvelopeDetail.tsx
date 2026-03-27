@@ -2,8 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../auth";
-import { EbAndFlowLogo } from "../components/EbAndFlowLogo";
-import { ThemeToggle } from "../theme";
+import { AppHeader } from "../components/AppHeader";
 
 type Envelope = {
   id: number;
@@ -29,18 +28,30 @@ function formatMoney(cents: number): string {
   }).format(cents / 100);
 }
 
-/** `datetime-local` value in the browser's local zone */
-function toDatetimeLocalValue(iso: string): string {
+/** Value for `input type="date"` from a stored ISO timestamp (local calendar date). */
+function toDateInputValue(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** `YYYY-MM-DD` from a date input → ISO string (noon local) for the API. */
+function parseDateInputToIso(dateStr: string): string | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr.trim());
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const day = Number(m[3]);
+  const local = new Date(y, mo - 1, day, 12, 0, 0, 0);
+  if (Number.isNaN(local.getTime())) return null;
+  return local.toISOString();
 }
 
 export function EnvelopeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [envelope, setEnvelope] = useState<Envelope | null>(null);
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +62,7 @@ export function EnvelopeDetail() {
   /** Stored as `note` in the API; label in UI is merchant / description. */
   const [merchantOrDescription, setMerchantOrDescription] = useState("");
   /** Empty = server uses current time when recording */
-  const [transactionDate, setTransactionDate] = useState("");
+  const [transactionDate, setTransactionDate] = useState(""); // YYYY-MM-DD
   const [submitting, setSubmitting] = useState(false);
 
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -108,10 +119,8 @@ export function EnvelopeDetail() {
         note: detail,
       };
       if (transactionDate.trim()) {
-        const d = new Date(transactionDate);
-        if (!Number.isNaN(d.getTime())) {
-          payload.created_at = d.toISOString();
-        }
+        const iso = parseDateInputToIso(transactionDate);
+        if (iso) payload.created_at = iso;
       }
       await api(`/api/envelopes/${id}/transactions`, {
         method: "POST",
@@ -133,7 +142,7 @@ export function EnvelopeDetail() {
     setEditAmount((Math.abs(t.amount_cents) / 100).toFixed(2));
     setEditType(t.amount_cents < 0 ? "ebb" : "flow");
     setEditNote((t.note ?? "").trim());
-    setEditDate(toDatetimeLocalValue(t.created_at));
+    setEditDate(toDateInputValue(t.created_at));
   }
 
   function cancelEdit() {
@@ -152,9 +161,9 @@ export function EnvelopeDetail() {
     const cents = Math.round(dollars * 100);
     const detail = editNote.trim();
     if (cents <= 0 || !detail) return;
-    const when = new Date(editDate);
-    if (!editDate.trim() || Number.isNaN(when.getTime())) {
-      setError("Choose a valid date and time for this transaction.");
+    const createdIso = parseDateInputToIso(editDate);
+    if (!editDate.trim() || !createdIso) {
+      setError("Choose a valid date for this transaction.");
       return;
     }
     setEditBusy(true);
@@ -166,7 +175,7 @@ export function EnvelopeDetail() {
           amount_cents: cents,
           type: editType,
           note: detail,
-          created_at: when.toISOString(),
+          created_at: createdIso,
         }),
       });
       cancelEdit();
@@ -301,40 +310,31 @@ export function EnvelopeDetail() {
 
   return (
     <div className="min-h-[100dvh] bg-paper">
-      <header className="chromatic-header sticky top-0 z-10 border-b border-border bg-card/90 backdrop-blur-md">
-        <div className="safe-x safe-t mx-auto grid max-w-3xl grid-cols-[1fr_auto_1fr] items-center gap-2 pb-3 sm:gap-3 sm:pb-4">
-          <div className="min-w-0 justify-self-start">
+      <AppHeader
+        left={
+          <>
             <Link
               to="/"
-              className="mb-1 inline-flex min-h-11 items-center text-sm font-medium text-accent hover:underline"
+              className="inline-flex items-center text-sm font-medium leading-tight text-accent hover:underline"
             >
               ← Dashboard
             </Link>
-            <p className="truncate text-sm text-muted">{user?.username}</p>
-          </div>
-          <div className="flex min-w-0 items-center justify-center gap-2 justify-self-center px-0.5">
-            <EbAndFlowLogo decorative className="shrink-0 text-ink" />
-            <p className="font-display text-lg font-semibold text-ink sm:text-xl">
-              Ebb and Flow
+            <p className="truncate text-sm leading-tight text-muted">
+              {user?.username}
             </p>
-          </div>
-          <div className="flex shrink-0 flex-wrap items-center justify-end justify-self-end gap-0.5 sm:gap-1">
-            <ThemeToggle />
-            <button
-              type="button"
-              onClick={logout}
-              className="btn-ghost shrink-0 text-sm sm:text-base"
-            >
-              Sign out
-            </button>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <main className="safe-x safe-b page-y mx-auto w-full max-w-3xl">
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <div className="min-w-0 flex-1">
+              {user?.household?.name ? (
+                <p className="mb-2 truncate text-sm font-medium text-muted">
+                  {user.household.name}
+                </p>
+              ) : null}
               {renameOpen ? (
                 <form
                   onSubmit={saveRename}
@@ -523,9 +523,9 @@ export function EnvelopeDetail() {
               />
             </label>
             <label className="block w-full max-w-md text-sm font-medium text-ink">
-              Date and time (optional)
+              Date (optional)
               <input
-                type="datetime-local"
+                type="date"
                 value={transactionDate}
                 onChange={(e) => setTransactionDate(e.target.value)}
                 className="input-field mt-1"
@@ -615,9 +615,9 @@ export function EnvelopeDetail() {
                         />
                       </label>
                       <label className="block w-full max-w-md text-sm font-medium text-ink">
-                        Date and time
+                        Date
                         <input
-                          type="datetime-local"
+                          type="date"
                           value={editDate}
                           onChange={(e) => setEditDate(e.target.value)}
                           className="input-field mt-1"
@@ -660,7 +660,7 @@ export function EnvelopeDetail() {
                               : "Flow"}
                         </p>
                         <p className="mt-0.5 break-words text-xs text-muted">
-                          {new Date(t.created_at).toLocaleString()} ·{" "}
+                          {new Date(t.created_at).toLocaleDateString()} ·{" "}
                           {t.recorded_by_username}
                         </p>
                         <div className="mt-3 flex flex-wrap gap-3">

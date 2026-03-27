@@ -2,8 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../auth";
-import { EbAndFlowLogo } from "../components/EbAndFlowLogo";
-import { ThemeToggle } from "../theme";
+import { AppHeader } from "../components/AppHeader";
 
 export type EnvelopeSummary = {
   id: number;
@@ -22,7 +21,7 @@ function formatMoney(cents: number): string {
 }
 
 export function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [envelopes, setEnvelopes] = useState<EnvelopeSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,13 +46,17 @@ export function Dashboard() {
 
   return (
     <div className="min-h-[100dvh] bg-paper">
-      <header className="chromatic-header sticky top-0 z-10 border-b border-border bg-card/90 backdrop-blur-md">
-        <div className="safe-x safe-t mx-auto grid max-w-3xl grid-cols-[1fr_auto_1fr] items-center gap-2 pb-3 sm:gap-3 sm:pb-4">
-          <div className="min-w-0 justify-self-start">
-            <p className="truncate text-sm text-muted">{user?.username}</p>
+      <AppHeader
+        left={
+          <>
+            <p className="truncate text-sm leading-tight text-muted">
+              {user?.username}
+            </p>
             {user?.household && (
-              <p className="text-xs text-muted">
-                Household · {user.household.members.length}{" "}
+              <p className="truncate text-xs leading-tight text-muted">
+                <span className="font-medium text-ink">{user.household.name}</span>
+                {" · "}
+                {user.household.members.length}{" "}
                 {user.household.members.length === 1 ? "member" : "members"}
                 {user.is_admin ? (
                   <span className="ml-2 rounded-md bg-accent/15 px-1.5 py-0.5 font-medium text-accent">
@@ -62,40 +65,9 @@ export function Dashboard() {
                 ) : null}
               </p>
             )}
-          </div>
-          <div className="flex min-w-0 items-center justify-center gap-2 justify-self-center px-0.5">
-            <EbAndFlowLogo
-              decorative
-              className="shrink-0 text-ink"
-            />
-            <p className="font-display text-lg font-semibold text-ink sm:text-xl">
-              Ebb and Flow
-            </p>
-          </div>
-          <div className="flex shrink-0 flex-wrap items-center justify-end justify-self-end gap-1 sm:gap-2">
-            <Link
-              to="/schedules"
-              className="btn-ghost inline-flex shrink-0 items-center justify-center rounded-xl px-3 text-sm sm:text-base"
-            >
-              Schedules
-            </Link>
-            <Link
-              to="/manage"
-              className="btn-ghost inline-flex shrink-0 items-center justify-center rounded-xl px-3 text-sm sm:text-base"
-            >
-              Manage
-            </Link>
-            <ThemeToggle />
-            <button
-              type="button"
-              onClick={logout}
-              className="btn-ghost shrink-0 text-sm sm:text-base"
-            >
-              Sign out
-            </button>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <main className="safe-x safe-b page-y mx-auto w-full max-w-3xl">
         {error && (
