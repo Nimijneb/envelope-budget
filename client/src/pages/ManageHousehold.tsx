@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AppHeader } from "../components/AppHeader";
+import { HeaderUserLeft } from "../components/HeaderUserLeft";
 import { api } from "../api";
 import { useAuth } from "../auth";
 
@@ -102,31 +103,29 @@ export function ManageHousehold() {
 
   return (
     <div className="min-h-[100dvh] bg-paper">
-      <AppHeader
-        left={
-          <>
-            <Link
-              to="/"
-              className="inline-flex items-center text-sm font-medium leading-tight text-accent hover:underline"
-            >
-              ← Dashboard
-            </Link>
-            <p className="truncate text-sm leading-tight text-muted">
-              {user?.username}
-            </p>
-          </>
-        }
-      />
+      <AppHeader left={<HeaderUserLeft user={user} />} />
 
       <main className="safe-x safe-b page-y mx-auto w-full max-w-3xl">
+        <Link
+          to="/"
+          className="mb-4 inline-block text-sm font-medium text-accent hover:underline"
+        >
+          ← Dashboard
+        </Link>
         <div className="mb-6 sm:mb-8">
           <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
             Manage household
           </h1>
-          {user?.household?.name ? (
-            <p className="mt-2 truncate text-lg font-medium text-ink">
-              {user.household.name}
-            </p>
+          {user?.household ? (
+            <>
+              <p className="mt-2 truncate text-lg font-medium text-ink">
+                {user.household.name}
+              </p>
+              <p className="mt-1 text-sm text-muted">
+                {user.household.members.length}{" "}
+                {user.household.members.length === 1 ? "member" : "members"}
+              </p>
+            </>
           ) : null}
         </div>
         {error && (

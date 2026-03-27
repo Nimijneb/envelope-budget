@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { AppHeader } from "../components/AppHeader";
+import { HeaderUserLeft } from "../components/HeaderUserLeft";
 
 type Envelope = {
   id: number;
@@ -310,31 +311,18 @@ export function EnvelopeDetail() {
 
   return (
     <div className="min-h-[100dvh] bg-paper">
-      <AppHeader
-        left={
-          <>
-            <Link
-              to="/"
-              className="inline-flex items-center text-sm font-medium leading-tight text-accent hover:underline"
-            >
-              ← Dashboard
-            </Link>
-            <p className="truncate text-sm leading-tight text-muted">
-              {user?.username}
-            </p>
-          </>
-        }
-      />
+      <AppHeader left={<HeaderUserLeft user={user} />} />
 
       <main className="safe-x safe-b page-y mx-auto w-full max-w-3xl">
+        <Link
+          to="/"
+          className="mb-4 inline-block text-sm font-medium text-accent hover:underline"
+        >
+          ← Dashboard
+        </Link>
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <div className="min-w-0 flex-1">
-              {user?.household?.name ? (
-                <p className="mb-2 truncate text-sm font-medium text-muted">
-                  {user.household.name}
-                </p>
-              ) : null}
               {renameOpen ? (
                 <form
                   onSubmit={saveRename}

@@ -88,24 +88,22 @@ export function AppHeader({ left }: AppHeaderProps) {
 
   return (
     <header className="chromatic-header sticky top-0 z-20 overflow-visible border-b border-border bg-card/90 backdrop-blur-md">
-      <div className="safe-x safe-t mx-auto max-w-3xl pb-3 sm:pb-4">
-        <div className="grid h-[4.25rem] grid-cols-[1fr_auto_1fr] items-stretch gap-2 sm:h-[4.5rem] sm:gap-3">
-          <div className="flex min-w-0 flex-col justify-center justify-self-start gap-0.5 overflow-hidden">
-            {left}
+      <div className="safe-x safe-t mx-auto max-w-3xl pb-2 sm:pb-4">
+        <div className="relative flex h-[4.25rem] items-center justify-between sm:h-[4.5rem]">
+          <div className="pointer-events-none relative z-20 flex h-full min-w-0 max-w-[min(13rem,46%)] flex-col justify-center overflow-hidden pr-1 sm:max-w-[min(18rem,44%)] sm:pr-2">
+            <div className="pointer-events-auto min-w-0 max-w-full">{left}</div>
           </div>
-          <div className="flex min-w-0 items-center justify-center gap-2 px-0.5">
-            <Link
-              to="/"
-              className="flex min-w-0 items-center gap-2 rounded-lg outline-none ring-accent/40 transition hover:opacity-90 focus-visible:ring-2"
-            >
-              <EbAndFlowLogo decorative className="shrink-0 text-ink" />
-              <span className="font-display text-lg font-semibold text-ink sm:text-xl">
-                Ebb and Flow
-              </span>
-            </Link>
-          </div>
+          <Link
+            to="/"
+            className="absolute left-1/2 top-1/2 z-10 flex max-w-[min(calc(100%-5.5rem),12rem)] -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-lg outline-none ring-accent/40 transition hover:opacity-90 focus-visible:ring-2 sm:max-w-none sm:gap-2"
+          >
+            <EbAndFlowLogo decorative className="shrink-0 text-ink" />
+            <span className="min-w-0 truncate font-display text-base font-semibold text-ink sm:text-xl">
+              Ebb and Flow
+            </span>
+          </Link>
           <div
-            className="relative flex shrink-0 items-center justify-end"
+            className="relative z-20 flex shrink-0 items-center justify-end"
             ref={wrapRef}
           >
             <button

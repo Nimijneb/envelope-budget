@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { AppHeader } from "../components/AppHeader";
+import { HeaderUserLeft } from "../components/HeaderUserLeft";
 
 export type EnvelopeSummary = {
   id: number;
@@ -46,28 +47,7 @@ export function Dashboard() {
 
   return (
     <div className="min-h-[100dvh] bg-paper">
-      <AppHeader
-        left={
-          <>
-            <p className="truncate text-sm leading-tight text-muted">
-              {user?.username}
-            </p>
-            {user?.household && (
-              <p className="truncate text-xs leading-tight text-muted">
-                <span className="font-medium text-ink">{user.household.name}</span>
-                {" · "}
-                {user.household.members.length}{" "}
-                {user.household.members.length === 1 ? "member" : "members"}
-                {user.is_admin ? (
-                  <span className="ml-2 rounded-md bg-accent/15 px-1.5 py-0.5 font-medium text-accent">
-                    Admin
-                  </span>
-                ) : null}
-              </p>
-            )}
-          </>
-        }
-      />
+      <AppHeader left={<HeaderUserLeft user={user} />} />
 
       <main className="safe-x safe-b page-y mx-auto w-full max-w-3xl">
         {error && (
@@ -116,11 +96,13 @@ export function Dashboard() {
                     <div className="min-w-0">
                       <p className="font-medium text-ink">
                         {env.name}
-                        {!env.shared_with_household ? (
-                          <span className="ml-2 align-middle text-xs font-medium text-warm">
-                            Private
-                          </span>
-                        ) : null}
+                        <span
+                          className={`ml-2 align-middle text-xs font-medium ${
+                            env.shared_with_household ? "text-accent" : "text-warm"
+                          }`}
+                        >
+                          {env.shared_with_household ? "Shared" : "Private"}
+                        </span>
                       </p>
                       <p className="text-xs text-muted">
                         Opened {new Date(env.created_at).toLocaleDateString()}

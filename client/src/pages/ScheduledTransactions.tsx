@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { AppHeader } from "../components/AppHeader";
+import { HeaderUserLeft } from "../components/HeaderUserLeft";
 import type { EnvelopeSummary } from "./Dashboard";
 
 type ScheduleRow = {
@@ -165,23 +166,17 @@ export function ScheduledTransactions() {
     }
   }
 
-  const headerLeft = (
-    <>
-      <Link
-        to="/"
-        className="inline-flex items-center text-sm font-medium leading-tight text-accent hover:underline"
-      >
-        ← Dashboard
-      </Link>
-      <p className="truncate text-sm leading-tight text-muted">{user?.username}</p>
-    </>
-  );
-
   if (loading) {
     return (
       <div className="min-h-[100dvh] bg-paper">
-        <AppHeader left={headerLeft} />
-        <main className="safe-x safe-b page-y mx-auto flex w-full max-w-3xl justify-center">
+        <AppHeader left={<HeaderUserLeft user={user} />} />
+        <main className="safe-x safe-b page-y mx-auto w-full max-w-3xl">
+          <Link
+            to="/"
+            className="mb-4 inline-block text-sm font-medium text-accent hover:underline"
+          >
+            ← Dashboard
+          </Link>
           <p className="text-muted">Loading…</p>
         </main>
       </div>
@@ -190,17 +185,18 @@ export function ScheduledTransactions() {
 
   return (
     <div className="min-h-[100dvh] bg-paper">
-      <AppHeader left={headerLeft} />
+      <AppHeader left={<HeaderUserLeft user={user} />} />
 
       <main className="safe-x safe-b page-y mx-auto w-full max-w-3xl">
+        <Link
+          to="/"
+          className="mb-4 inline-block text-sm font-medium text-accent hover:underline"
+        >
+          ← Dashboard
+        </Link>
         <h1 className="font-display mb-2 text-2xl font-semibold text-ink sm:text-3xl">
           Scheduled transactions
         </h1>
-        {user?.household?.name ? (
-          <p className="mb-3 truncate text-base font-medium text-ink sm:mb-4">
-            {user.household.name}
-          </p>
-        ) : null}
         <p className="mb-6 max-w-2xl text-sm text-muted sm:mb-8">
           Each month on the day you choose (or the last day of the month if that
           day does not exist), the app records one Ebb or Flow. You can target any
