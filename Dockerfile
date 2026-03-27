@@ -1,4 +1,6 @@
-FROM node:22-alpine AS deps
+# Official library image via AWS Public ECR mirror — avoids Docker Hub anonymous
+# rate limits (429) in CI (e.g. GitHub Actions).
+FROM public.ecr.aws/docker/library/node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY server/package.json server/
@@ -12,7 +14,7 @@ RUN npm run build -w client
 RUN npm run build -w server
 RUN rm -rf server/public && cp -r client/dist server/public
 
-FROM node:22-alpine AS runner
+FROM public.ecr.aws/docker/library/node:22-alpine AS runner
 WORKDIR /app
 RUN addgroup -S app && adduser -S app -G app
 ENV NODE_ENV=production
