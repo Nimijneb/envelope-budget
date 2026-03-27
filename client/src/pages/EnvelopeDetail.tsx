@@ -8,6 +8,7 @@ import { ThemeToggle } from "../theme";
 type Envelope = {
   id: number;
   name: string;
+  opening_balance_cents: number;
   balance_cents: number;
   created_at: string;
   shared_with_household: boolean;
@@ -63,6 +64,10 @@ export function EnvelopeDetail() {
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameName, setRenameName] = useState("");
   const [renameBusy, setRenameBusy] = useState(false);
+
+  const [balanceEditOpen, setBalanceEditOpen] = useState(false);
+  const [balanceDraft, setBalanceDraft] = useState("");
+  const [balanceBusy, setBalanceBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -218,6 +223,43 @@ export function EnvelopeDetail() {
     }
   }
 
+  function startBalanceEdit() {
+    if (!envelope) return;
+    setBalanceDraft((envelope.balance_cents / 100).toFixed(2));
+    setBalanceEditOpen(true);
+  }
+
+  function cancelBalanceEdit() {
+    setBalanceEditOpen(false);
+    setBalanceBusy(false);
+  }
+
+  async function saveBalance(e: React.FormEvent) {
+    e.preventDefault();
+    if (!id) return;
+    const raw = balanceDraft.replace(/[^0-9.-]/g, "");
+    const dollars = parseFloat(raw || "0");
+    if (Number.isNaN(dollars)) {
+      setError("Enter a valid amount.");
+      return;
+    }
+    const cents = Math.round(dollars * 100);
+    setBalanceBusy(true);
+    setError(null);
+    try {
+      await api(`/api/envelopes/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ current_balance_cents: cents }),
+      });
+      cancelBalanceEdit();
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update balance");
+    } finally {
+      setBalanceBusy(false);
+    }
+  }
+
   async function removeEnvelope() {
     if (!id || !envelope) return;
     if (
@@ -366,9 +408,59 @@ export function EnvelopeDetail() {
             <p className="text-xs font-medium uppercase tracking-wide text-muted">
               Current balance
             </p>
-            <p className="font-display text-3xl font-semibold tabular-nums text-ink sm:text-4xl">
-              {formatMoney(envelope.balance_cents)}
-            </p>
+            {balanceEditOpen ? (
+              <form
+                onSubmit={saveBalance}
+                className="mt-2 space-y-2"
+              >
+                <p className="text-sm text-muted">
+                  Sets the total to this amount by adjusting opening balance. Your
+                  transaction list does not change.
+                </p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-3">
+                  <label className="min-w-0 flex-1 text-sm font-medium text-ink">
+                    New balance
+                    <input
+                      value={balanceDraft}
+                      onChange={(e) => setBalanceDraft(e.target.value)}
+                      inputMode="decimal"
+                      autoFocus
+                      className="input-field mt-1 font-display text-2xl font-semibold tabular-nums text-ink sm:text-3xl"
+                    />
+                  </label>
+                  <div className="flex shrink-0 flex-wrap gap-2">
+                    <button
+                      type="submit"
+                      disabled={balanceBusy}
+                      className="btn-primary min-h-11"
+                    >
+                      {balanceBusy ? "Saving…" : "Save balance"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelBalanceEdit}
+                      disabled={balanceBusy}
+                      className="btn-secondary min-h-11"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </form>
+            ) : (
+              <div className="mt-1 flex flex-wrap items-baseline gap-3">
+                <p className="font-display text-3xl font-semibold tabular-nums text-ink sm:text-4xl">
+                  {formatMoney(envelope.balance_cents)}
+                </p>
+                <button
+                  type="button"
+                  onClick={startBalanceEdit}
+                  className="shrink-0 text-sm font-medium text-accent hover:underline"
+                >
+                  Edit
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

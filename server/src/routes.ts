@@ -38,9 +38,15 @@ const envelopeCreateSchema = z.object({
   shared_with_household: z.boolean().optional(),
 });
 
-const envelopePatchSchema = z.object({
-  name: z.string().min(1).max(120),
-});
+const envelopePatchSchema = z
+  .object({
+    name: z.string().min(1).max(120).optional(),
+    /** Set envelope total to this amount (opening balance is adjusted; transactions unchanged). */
+    current_balance_cents: z.number().int().min(-999_999_999_99).max(999_999_999_99).optional(),
+  })
+  .refine((d) => d.name !== undefined || d.current_balance_cents !== undefined, {
+    message: "Provide name and/or current_balance_cents",
+  });
 
 const transactionSchema = z.object({
   amount_cents: z.number().int().positive().max(999_999_999_99),
@@ -493,16 +499,6 @@ export function createRouter(db: Database.Database): Router {
       res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
-    const info = db
-      .prepare(
-        `UPDATE envelopes SET name = ?
-         WHERE id = ? AND household_id = ? AND (is_shared = 1 OR user_id = ?)`
-      )
-      .run(parsed.data.name.trim(), id, user.householdId, user.id);
-    if (info.changes === 0) {
-      res.status(404).json({ error: "Envelope not found" });
-      return;
-    }
     const row = db
       .prepare(
         `SELECT e.id, e.name, e.opening_balance_cents, e.created_at, e.is_shared,
@@ -523,17 +519,61 @@ export function createRouter(db: Database.Database): Router {
         }
       | undefined;
     if (!row) {
+      res.status(404).json({ error: "Envelope not found" });
+      return;
+    }
+
+    let newName = row.name;
+    if (parsed.data.name !== undefined) {
+      newName = parsed.data.name.trim();
+    }
+    let newOpening = row.opening_balance_cents;
+    if (parsed.data.current_balance_cents !== undefined) {
+      newOpening = parsed.data.current_balance_cents - row.tx_sum;
+    }
+
+    const info = db
+      .prepare(
+        `UPDATE envelopes SET name = ?, opening_balance_cents = ?
+         WHERE id = ? AND household_id = ? AND (is_shared = 1 OR user_id = ?)`
+      )
+      .run(newName, newOpening, id, user.householdId, user.id);
+    if (info.changes === 0) {
+      res.status(404).json({ error: "Envelope not found" });
+      return;
+    }
+
+    const out = db
+      .prepare(
+        `SELECT e.id, e.name, e.opening_balance_cents, e.created_at, e.is_shared,
+          COALESCE(SUM(t.amount_cents), 0) AS tx_sum
+        FROM envelopes e
+        LEFT JOIN transactions t ON t.envelope_id = e.id
+        WHERE e.id = ? AND e.household_id = ? AND (e.is_shared = 1 OR e.user_id = ?)
+        GROUP BY e.id`
+      )
+      .get(id, user.householdId, user.id) as
+      | {
+          id: number;
+          name: string;
+          opening_balance_cents: number;
+          created_at: string;
+          is_shared: number;
+          tx_sum: number;
+        }
+      | undefined;
+    if (!out) {
       res.status(500).json({ error: "Could not load envelope" });
       return;
     }
     res.json({
       envelope: {
-        id: row.id,
-        name: row.name,
-        opening_balance_cents: row.opening_balance_cents,
-        balance_cents: row.opening_balance_cents + row.tx_sum,
-        created_at: row.created_at,
-        shared_with_household: row.is_shared === 1,
+        id: out.id,
+        name: out.name,
+        opening_balance_cents: out.opening_balance_cents,
+        balance_cents: out.opening_balance_cents + out.tx_sum,
+        created_at: out.created_at,
+        shared_with_household: out.is_shared === 1,
       },
     });
   });
