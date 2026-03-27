@@ -1,0 +1,100 @@
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import { api, getToken, setToken } from "./api";
+
+export type Household = {
+  id: number;
+  name: string;
+  invite_code: string;
+  members: { id: number; username: string; is_admin: boolean }[];
+};
+
+export type User = {
+  id: number;
+  username: string;
+  is_admin: boolean;
+  household: Household;
+};
+
+type AuthState = {
+  user: User | null;
+  loading: boolean;
+  login: (username: string, password: string) => Promise<void>;
+  refreshUser: () => Promise<void>;
+  logout: () => void;
+};
+
+const AuthContext = createContext<AuthState | null>(null);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const refreshUser = useCallback(async () => {
+    const { user: u } = await api<{ user: User }>("/api/me");
+    setUser(u);
+  }, []);
+
+  const refresh = useCallback(async () => {
+    const t = getToken();
+    if (!t) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+    try {
+      await refreshUser();
+    } catch {
+      setToken(null);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [refreshUser]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const login = useCallback(async (username: string, password: string) => {
+    const { token, user: u } = await api<{ token: string; user: User }>(
+      "/api/auth/login",
+      { method: "POST", body: JSON.stringify({ username, password }) }
+    );
+    setToken(token);
+    setUser(u);
+  }, []);
+
+  const logout = useCallback(() => {
+    setToken(null);
+    setUser(null);
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      user,
+      loading,
+      login,
+      refreshUser,
+      logout,
+    }),
+    [user, loading, login, refreshUser, logout]
+  );
+
+  return (
+    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  );
+}
+
+export function useAuth(): AuthState {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth outside AuthProvider");
+  return ctx;
+}

@@ -1,0 +1,8 @@
+node_modules
+server/dist
+server/public
+server/data
+client/dist
+.git
+.env
+*.md
