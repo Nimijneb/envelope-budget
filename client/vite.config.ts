@@ -9,13 +9,15 @@ export default defineConfig(({ command }) => {
   // are deleted (e.g. removed SVGs), causing ENOENT during CSS analysis. Clear dev cache
   // on each dev server start so the graph matches the filesystem.
   if (command === "serve") {
-    try {
-      rmSync(path.join(__dirname, "node_modules", ".vite"), {
-        recursive: true,
-        force: true,
-      });
-    } catch {
-      /* ignore missing cache */
+    for (const viteCache of [
+      path.join(__dirname, "node_modules", ".vite"),
+      path.join(__dirname, "..", "node_modules", ".vite"),
+    ]) {
+      try {
+        rmSync(viteCache, { recursive: true, force: true });
+      } catch {
+        /* ignore missing cache */
+      }
     }
   }
 
