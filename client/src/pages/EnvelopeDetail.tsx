@@ -291,7 +291,7 @@ export function EnvelopeDetail() {
 
   if (loading) {
     return (
-      <div className="safe-x safe-t flex min-h-[100dvh] w-full min-w-0 items-center justify-center overflow-x-hidden bg-paper">
+      <div className="safe-x safe-t flex min-h-[100dvh] w-full min-w-0 items-center justify-center overflow-x-clip bg-paper">
         <p className="text-muted">Loading…</p>
       </div>
     );
@@ -314,7 +314,7 @@ export function EnvelopeDetail() {
   const canEdit = envelope.can_edit;
 
   return (
-    <div className="min-h-[100dvh] w-full min-w-0 overflow-x-hidden bg-paper">
+    <div className="min-h-[100dvh] w-full min-w-0 overflow-x-clip bg-paper">
       <AppHeader left={<HeaderUserLeft user={user} />} />
 
       <main className="safe-x safe-b page-y mx-auto w-full min-w-0 max-w-3xl">
