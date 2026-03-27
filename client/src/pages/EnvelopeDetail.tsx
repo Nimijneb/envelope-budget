@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
+import { useAuth } from "../auth";
+import { EbAndFlowLogo } from "../components/EbAndFlowLogo";
 import { ThemeToggle } from "../theme";
 
 type Envelope = {
@@ -29,16 +31,23 @@ function formatMoney(cents: number): string {
 export function EnvelopeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [envelope, setEnvelope] = useState<Envelope | null>(null);
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [amount, setAmount] = useState("");
-  const [type, setType] = useState<"debit" | "credit">("debit");
+  const [type, setType] = useState<"ebb" | "flow">("ebb");
   /** Stored as `note` in the API; label in UI is merchant / description. */
   const [merchantOrDescription, setMerchantOrDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editAmount, setEditAmount] = useState("");
+  const [editType, setEditType] = useState<"ebb" | "flow">("ebb");
+  const [editNote, setEditNote] = useState("");
+  const [editBusy, setEditBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -91,6 +100,63 @@ export function EnvelopeDetail() {
     }
   }
 
+  function startEdit(t: TransactionRow) {
+    setEditingId(t.id);
+    setEditAmount((Math.abs(t.amount_cents) / 100).toFixed(2));
+    setEditType(t.amount_cents < 0 ? "ebb" : "flow");
+    setEditNote((t.note ?? "").trim());
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditAmount("");
+    setEditNote("");
+    setEditBusy(false);
+  }
+
+  async function saveEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!id || editingId === null) return;
+    const raw = editAmount.replace(/[^0-9.]/g, "");
+    const dollars = parseFloat(raw || "0");
+    const cents = Math.round(dollars * 100);
+    const detail = editNote.trim();
+    if (cents <= 0 || !detail) return;
+    setEditBusy(true);
+    setError(null);
+    try {
+      await api(`/api/envelopes/${id}/transactions/${editingId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          amount_cents: cents,
+          type: editType,
+          note: detail,
+        }),
+      });
+      cancelEdit();
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update transaction");
+    } finally {
+      setEditBusy(false);
+    }
+  }
+
+  async function deleteTransaction(txId: number) {
+    if (!id) return;
+    if (!confirm("Delete this transaction? This cannot be undone.")) return;
+    setError(null);
+    try {
+      await api(`/api/envelopes/${id}/transactions/${txId}`, {
+        method: "DELETE",
+      });
+      if (editingId === txId) cancelEdit();
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not delete transaction");
+    }
+  }
+
   async function removeEnvelope() {
     if (!id || !envelope) return;
     if (
@@ -133,21 +199,30 @@ export function EnvelopeDetail() {
   return (
     <div className="min-h-[100dvh] bg-paper">
       <header className="chromatic-header sticky top-0 z-10 border-b border-border bg-card/90 backdrop-blur-md">
-        <div className="safe-x safe-t mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 pb-3 sm:pb-4">
-          <Link
-            to="/"
-            className="min-h-11 inline-flex items-center text-base font-medium text-accent hover:underline"
-          >
-            ← All envelopes
-          </Link>
-          <div className="flex items-center gap-0.5 sm:gap-1">
+        <div className="safe-x safe-t mx-auto grid max-w-3xl grid-cols-[1fr_auto_1fr] items-center gap-2 pb-3 sm:gap-3 sm:pb-4">
+          <div className="min-w-0 justify-self-start">
+            <Link
+              to="/"
+              className="mb-1 inline-flex min-h-11 items-center text-sm font-medium text-accent hover:underline"
+            >
+              ← Dashboard
+            </Link>
+            <p className="truncate text-sm text-muted">{user?.username}</p>
+          </div>
+          <div className="flex min-w-0 items-center justify-center gap-2 justify-self-center px-0.5">
+            <EbAndFlowLogo decorative className="shrink-0 text-ink" />
+            <p className="font-display text-lg font-semibold text-ink sm:text-xl">
+              Ebb and Flow
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center justify-end justify-self-end gap-0.5 sm:gap-1">
             <ThemeToggle />
             <button
               type="button"
-              onClick={removeEnvelope}
-              className="min-h-11 text-base text-red-700 hover:underline dark:text-red-400"
+              onClick={logout}
+              className="btn-ghost shrink-0 text-sm sm:text-base"
             >
-              Delete envelope
+              Sign out
             </button>
           </div>
         </div>
@@ -155,9 +230,18 @@ export function EnvelopeDetail() {
 
       <main className="safe-x safe-b page-y mx-auto w-full max-w-3xl">
         <div className="mb-6 sm:mb-8">
-          <h1 className="font-display break-words text-2xl font-semibold leading-tight text-ink sm:text-3xl">
-            {envelope.name}
-          </h1>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <h1 className="font-display break-words text-2xl font-semibold leading-tight text-ink sm:text-3xl">
+              {envelope.name}
+            </h1>
+            <button
+              type="button"
+              onClick={removeEnvelope}
+              className="shrink-0 self-start text-sm font-medium text-red-700 hover:underline sm:pt-1 dark:text-red-400"
+            >
+              Delete envelope
+            </button>
+          </div>
           <p className="mt-2 text-sm text-muted">
             {envelope.shared_with_household ? (
               <>Shared with your household · anyone here can view and add activity</>
@@ -184,7 +268,7 @@ export function EnvelopeDetail() {
             Add transaction
           </h2>
           <p className="mt-1 text-sm text-muted">
-            Debit removes money from this envelope; credit adds money back.
+            Ebb removes money from this envelope; Flow adds money back.
           </p>
           <form onSubmit={addTransaction} className="mt-4 space-y-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
@@ -205,21 +289,21 @@ export function EnvelopeDetail() {
                   <input
                     type="radio"
                     name="txtype"
-                    checked={type === "debit"}
-                    onChange={() => setType("debit")}
+                    checked={type === "ebb"}
+                    onChange={() => setType("ebb")}
                     className="h-5 w-5 accent-warm"
                   />
-                  <span>Debit</span>
+                  <span>Ebb</span>
                 </label>
                 <label className="flex min-h-[44px] cursor-pointer items-center gap-2.5 text-base touch-manipulation">
                   <input
                     type="radio"
                     name="txtype"
-                    checked={type === "credit"}
-                    onChange={() => setType("credit")}
+                    checked={type === "flow"}
+                    onChange={() => setType("flow")}
                     className="h-5 w-5 accent-accent"
                   />
-                  <span>Credit</span>
+                  <span>Flow</span>
                 </label>
               </fieldset>
             </div>
@@ -271,31 +355,118 @@ export function EnvelopeDetail() {
           ) : (
             <ul className="neon-panel mt-4 divide-y divide-border rounded-2xl border border-border bg-card">
               {transactions.map((t) => (
-                <li
-                  key={t.id}
-                  className="flex flex-col gap-2 px-4 py-4 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4 sm:px-5"
-                >
-                  <div className="min-w-0">
-                    <p className="break-words font-medium text-ink">
-                      {t.note
-                        ? `${t.note} · ${t.amount_cents < 0 ? "Debit" : "Credit"}`
-                        : t.amount_cents < 0
-                          ? "Debit"
-                          : "Credit"}
-                    </p>
-                    <p className="mt-0.5 break-words text-xs text-muted">
-                      {new Date(t.created_at).toLocaleString()} ·{" "}
-                      {t.recorded_by_username}
-                    </p>
-                  </div>
-                  <p
-                    className={`shrink-0 self-end font-display text-lg font-semibold tabular-nums sm:self-auto sm:text-xl ${
-                      t.amount_cents < 0 ? "text-warm" : "text-accent"
-                    }`}
-                  >
-                    {t.amount_cents < 0 ? "−" : "+"}
-                    {formatMoney(Math.abs(t.amount_cents))}
-                  </p>
+                <li key={t.id} className="px-4 py-4 sm:px-5">
+                  {editingId === t.id ? (
+                    <form onSubmit={saveEdit} className="space-y-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+                        <label className="block w-full min-w-0 sm:max-w-[12rem]">
+                          <span className="text-sm font-medium text-ink">Amount</span>
+                          <input
+                            value={editAmount}
+                            onChange={(e) => setEditAmount(e.target.value)}
+                            inputMode="decimal"
+                            className="input-field mt-1"
+                          />
+                        </label>
+                        <fieldset className="flex min-h-[44px] items-center gap-6 border-0 p-0 sm:pb-1">
+                          <legend className="sr-only">Transaction type</legend>
+                          <label className="flex cursor-pointer items-center gap-2 text-base">
+                            <input
+                              type="radio"
+                              name={`edittype-${t.id}`}
+                              checked={editType === "ebb"}
+                              onChange={() => setEditType("ebb")}
+                              className="h-5 w-5 accent-warm"
+                            />
+                            Ebb
+                          </label>
+                          <label className="flex cursor-pointer items-center gap-2 text-base">
+                            <input
+                              type="radio"
+                              name={`edittype-${t.id}`}
+                              checked={editType === "flow"}
+                              onChange={() => setEditType("flow")}
+                              className="h-5 w-5 accent-accent"
+                            />
+                            Flow
+                          </label>
+                        </fieldset>
+                      </div>
+                      <label className="block text-sm font-medium text-ink">
+                        Merchant or description
+                        <input
+                          value={editNote}
+                          onChange={(e) => setEditNote(e.target.value)}
+                          required
+                          maxLength={500}
+                          className="input-field mt-1"
+                        />
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="submit"
+                          disabled={
+                            editBusy ||
+                            !editNote.trim() ||
+                            Math.round(
+                              parseFloat(editAmount.replace(/[^0-9.]/g, "") || "0") * 100
+                            ) <= 0
+                          }
+                          className="btn-primary min-h-11"
+                        >
+                          {editBusy ? "Saving…" : "Save changes"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={cancelEdit}
+                          disabled={editBusy}
+                          className="btn-secondary min-h-11"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                      <div className="min-w-0 flex-1">
+                        <p className="break-words font-medium text-ink">
+                          {t.note
+                            ? `${t.note} · ${t.amount_cents < 0 ? "Ebb" : "Flow"}`
+                            : t.amount_cents < 0
+                              ? "Ebb"
+                              : "Flow"}
+                        </p>
+                        <p className="mt-0.5 break-words text-xs text-muted">
+                          {new Date(t.created_at).toLocaleString()} ·{" "}
+                          {t.recorded_by_username}
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-3">
+                          <button
+                            type="button"
+                            onClick={() => startEdit(t)}
+                            className="text-sm font-medium text-accent hover:underline"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void deleteTransaction(t.id)}
+                            className="text-sm font-medium text-red-700 hover:underline dark:text-red-400"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                      <p
+                        className={`shrink-0 font-display text-lg font-semibold tabular-nums sm:text-xl ${
+                          t.amount_cents < 0 ? "text-warm" : "text-accent"
+                        }`}
+                      >
+                        {t.amount_cents < 0 ? "−" : "+"}
+                        {formatMoney(Math.abs(t.amount_cents))}
+                      </p>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

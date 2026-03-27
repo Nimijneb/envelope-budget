@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../auth";
-import { PronghornLogo } from "../components/PronghornLogo";
+import { EbAndFlowLogo } from "../components/EbAndFlowLogo";
 import { ThemeToggle } from "../theme";
 
 export type EnvelopeSummary = {
@@ -50,9 +50,6 @@ export function Dashboard() {
       <header className="chromatic-header sticky top-0 z-10 border-b border-border bg-card/90 backdrop-blur-md">
         <div className="safe-x safe-t mx-auto grid max-w-3xl grid-cols-[1fr_auto_1fr] items-center gap-2 pb-3 sm:gap-3 sm:pb-4">
           <div className="min-w-0 justify-self-start">
-            <p className="font-display text-lg font-semibold text-ink sm:text-xl">
-              Pronghorn
-            </p>
             <p className="truncate text-sm text-muted">{user?.username}</p>
             {user?.household && (
               <p className="text-xs text-muted">
@@ -66,11 +63,14 @@ export function Dashboard() {
               </p>
             )}
           </div>
-          <div className="flex justify-center justify-self-center px-1">
-            <PronghornLogo
+          <div className="flex min-w-0 items-center justify-center gap-2 justify-self-center px-0.5">
+            <EbAndFlowLogo
               decorative
-              className="h-9 w-auto max-w-[min(100vw-12rem,11rem)] shrink-0 text-ink sm:h-10"
+              className="shrink-0 text-ink"
             />
+            <p className="font-display text-lg font-semibold text-ink sm:text-xl">
+              Ebb and Flow
+            </p>
           </div>
           <div className="flex shrink-0 flex-wrap items-center justify-end justify-self-end gap-1 sm:gap-2">
             <Link

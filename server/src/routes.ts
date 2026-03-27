@@ -40,7 +40,7 @@ const envelopeCreateSchema = z.object({
 
 const transactionSchema = z.object({
   amount_cents: z.number().int().positive().max(999_999_999_99),
-  type: z.enum(["debit", "credit"]),
+  type: z.enum(["ebb", "flow"]),
   note: z
     .string()
     .trim()
@@ -491,7 +491,7 @@ export function createRouter(db: Database.Database): Router {
       return;
     }
     const { amount_cents, type, note } = parsed.data;
-    const signed = type === "credit" ? amount_cents : -amount_cents;
+    const signed = type === "flow" ? amount_cents : -amount_cents;
     const info = db
       .prepare(
         `INSERT INTO transactions (user_id, envelope_id, amount_cents, note)
@@ -517,6 +517,107 @@ export function createRouter(db: Database.Database): Router {
       balance_cents: envRow.opening_balance_cents + sumRow.s,
     });
   });
+
+  function transactionBelongsToAccessibleEnvelope(
+    txId: number,
+    envelopeId: number,
+    user: { householdId: number; id: number }
+  ): boolean {
+    const row = db
+      .prepare(
+        `SELECT t.id FROM transactions t
+         JOIN envelopes e ON e.id = t.envelope_id
+         WHERE t.id = ? AND t.envelope_id = ? AND e.household_id = ?
+         AND (e.is_shared = 1 OR e.user_id = ?)`
+      )
+      .get(txId, envelopeId, user.householdId, user.id) as
+      | { id: number }
+      | undefined;
+    return row != null;
+  }
+
+  r.patch(
+    "/api/envelopes/:eid/transactions/:tid",
+    authMiddleware,
+    (req, res) => {
+      const { user } = req as AuthedRequest;
+      const envelopeId = Number(req.params.eid);
+      const txId = Number(req.params.tid);
+      if (!Number.isFinite(envelopeId) || !Number.isFinite(txId)) {
+        res.status(400).json({ error: "Invalid id" });
+        return;
+      }
+      if (!transactionBelongsToAccessibleEnvelope(txId, envelopeId, user)) {
+        res.status(404).json({ error: "Transaction not found" });
+        return;
+      }
+      const parsed = transactionSchema.safeParse(req.body);
+      if (!parsed.success) {
+        res.status(400).json({ error: parsed.error.flatten() });
+        return;
+      }
+      const { amount_cents, type, note } = parsed.data;
+      const signed = type === "flow" ? amount_cents : -amount_cents;
+      db.prepare(
+        `UPDATE transactions SET amount_cents = ?, note = ? WHERE id = ? AND envelope_id = ?`
+      ).run(signed, note, txId, envelopeId);
+      const sumRow = db
+        .prepare(
+          `SELECT COALESCE(SUM(amount_cents), 0) AS s FROM transactions WHERE envelope_id = ?`
+        )
+        .get(envelopeId) as { s: number };
+      const envRow = db
+        .prepare("SELECT opening_balance_cents FROM envelopes WHERE id = ?")
+        .get(envelopeId) as { opening_balance_cents: number };
+      const trow = db
+        .prepare(
+          "SELECT id, amount_cents, note, created_at FROM transactions WHERE id = ?"
+        )
+        .get(txId) as {
+        id: number;
+        amount_cents: number;
+        note: string | null;
+        created_at: string;
+      };
+      res.json({
+        transaction: {
+          id: trow.id,
+          amount_cents: trow.amount_cents,
+          note: trow.note,
+          created_at: trow.created_at,
+        },
+        balance_cents: envRow.opening_balance_cents + sumRow.s,
+      });
+    }
+  );
+
+  r.delete(
+    "/api/envelopes/:eid/transactions/:tid",
+    authMiddleware,
+    (req, res) => {
+      const { user } = req as AuthedRequest;
+      const envelopeId = Number(req.params.eid);
+      const txId = Number(req.params.tid);
+      if (!Number.isFinite(envelopeId) || !Number.isFinite(txId)) {
+        res.status(400).json({ error: "Invalid id" });
+        return;
+      }
+      if (!transactionBelongsToAccessibleEnvelope(txId, envelopeId, user)) {
+        res.status(404).json({ error: "Transaction not found" });
+        return;
+      }
+      const info = db
+        .prepare(
+          "DELETE FROM transactions WHERE id = ? AND envelope_id = ?"
+        )
+        .run(txId, envelopeId);
+      if (info.changes === 0) {
+        res.status(404).json({ error: "Transaction not found" });
+        return;
+      }
+      res.status(204).send();
+    }
+  );
 
   r.use((req, res, next) => {
     if (req.path.startsWith("/api")) {

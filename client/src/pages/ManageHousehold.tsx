@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { PronghornLogo } from "../components/PronghornLogo";
+import { EbAndFlowLogo } from "../components/EbAndFlowLogo";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { ThemeToggle } from "../theme";
@@ -104,26 +104,23 @@ export function ManageHousehold() {
   return (
     <div className="min-h-[100dvh] bg-paper">
       <header className="chromatic-header sticky top-0 z-10 border-b border-border bg-card/90 backdrop-blur-md">
-        <div className="safe-x safe-t mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 pb-3 sm:pb-4">
-          <div className="min-w-0 flex-1">
+        <div className="safe-x safe-t mx-auto grid max-w-3xl grid-cols-[1fr_auto_1fr] items-center gap-2 pb-3 sm:gap-3 sm:pb-4">
+          <div className="min-w-0 justify-self-start">
             <Link
               to="/"
               className="mb-1 inline-flex min-h-11 items-center text-sm font-medium text-accent hover:underline"
             >
               ← Dashboard
             </Link>
-            <div className="flex items-center gap-2">
-              <PronghornLogo
-                decorative
-                className="h-8 w-auto shrink-0 text-ink"
-              />
-              <p className="font-display text-lg font-semibold text-ink sm:text-xl">
-                Manage household
-              </p>
-            </div>
             <p className="truncate text-sm text-muted">{user?.username}</p>
           </div>
-          <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+          <div className="flex min-w-0 items-center justify-center gap-2 justify-self-center px-0.5">
+            <EbAndFlowLogo decorative className="shrink-0 text-ink" />
+            <p className="font-display text-lg font-semibold text-ink sm:text-xl">
+              Ebb and Flow
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center justify-end justify-self-end gap-0.5 sm:gap-1">
             <ThemeToggle />
             <button
               type="button"
@@ -137,6 +134,9 @@ export function ManageHousehold() {
       </header>
 
       <main className="safe-x safe-b page-y mx-auto w-full max-w-3xl">
+        <h1 className="font-display mb-6 text-2xl font-semibold text-ink sm:mb-8 sm:text-3xl">
+          Manage household
+        </h1>
         {error && (
           <div
             className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 shadow-sm dark:border-red-400/60 dark:bg-red-950/70 dark:text-red-50 dark:shadow-[0_0_32px_rgba(255,60,120,0.45),0_0_60px_rgba(239,68,68,0.2)]"
@@ -269,7 +269,8 @@ export function ManageHousehold() {
             New envelope
           </h2>
           <p className="mt-1 text-sm text-muted">
-            Set a starting balance, then add debits and credits on the envelope
+            Set a starting balance, then add Ebb and Flow transactions on the
+            envelope
             page.
           </p>
           <form onSubmit={createEnvelope} className="mt-4 space-y-4">

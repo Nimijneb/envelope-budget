@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
-import { PronghornLogo } from "../components/PronghornLogo";
+import { EbAndFlowLogo } from "../components/EbAndFlowLogo";
 import { ThemeToggle } from "../theme";
 
 export function Login() {
@@ -50,14 +50,14 @@ export function Login() {
           <ThemeToggle />
         </div>
         <div className="mb-8 text-center sm:mb-10">
-          <div className="neon-login-icon mx-auto mb-4 inline-flex h-14 max-w-[min(100%,13rem)] items-center justify-center rounded-2xl bg-accent px-5 shadow-lg shadow-teal-900/10">
-            <PronghornLogo
+          <h1 className="neon-login-icon mx-auto mb-4 inline-flex min-h-14 max-w-[min(100%,22rem)] items-center justify-center gap-3 rounded-2xl bg-accent px-4 py-2 shadow-lg shadow-teal-900/10 sm:px-5">
+            <EbAndFlowLogo
               decorative
-              className="h-9 w-auto text-white dark:text-[#06060c]"
+              className="shrink-0 text-white dark:text-[#06060c]"
             />
-          </div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
-            Pronghorn
+            <span className="font-display text-2xl font-semibold tracking-tight text-white dark:text-[#06060c] sm:text-3xl">
+              Ebb and Flow
+            </span>
           </h1>
           <p className="mt-2 px-1 text-sm text-muted sm:text-base">
             Sign in with the username your administrator created for you.

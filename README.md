@@ -1,6 +1,8 @@
-# Pronghorn
+# Ebb and Flow
 
-A small, self-hosted envelope budgeting app with **households** (shared budgets) and multiple envelopes per household. Each envelope has a **starting balance** when created; you then record **debits** (money out) and **credits** (money in). Current balance is: starting balance plus the sum of all transactions.
+> **Disclaimer:** this project is 100% vibe coded. There may be security issues that I do not know to look for.
+
+A small, self-hosted envelope budgeting app with **households** (shared budgets) and multiple envelopes per household. Each envelope has a **starting balance** when created; you then record **Ebb** (money out) and **Flow** (money in). Current balance is: starting balance plus the sum of all transactions.
 
 Inspired by [Goodbudget](https://goodbudget.com/) and [Envelopes](https://envlps.com/), with fewer features on purpose.
 
@@ -12,7 +14,7 @@ Inspired by [Goodbudget](https://goodbudget.com/) and [Envelopes](https://envlps
 - **Households**: each account belongs to one household; family members share envelopes.
 - Create envelopes with a starting balance (in dollars; stored as cents)
 - List envelopes with running balance (shared with the household)
-- Per-envelope transaction log (debit or credit, optional note; shows who recorded each entry)
+- Per-envelope transaction log (Ebb or Flow, optional note; shows who recorded each entry)
 - Delete an envelope (and its transactions)
 - Single container: API + static web UI
 
