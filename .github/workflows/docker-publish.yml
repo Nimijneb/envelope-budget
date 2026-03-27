@@ -20,8 +20,12 @@ concurrency:
 jobs:
   push:
     runs-on: ubuntu-latest
+    env:
+      # Use Node 24 for JS-based actions (Node 20 deprecated on runners); safe to remove
+      # once all pinned actions default to Node 24.
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Registry image name (GHCR requires lowercase)
         id: image
@@ -30,14 +34,14 @@ jobs:
           echo "name=ghcr.io/${owner}/envelope-budget" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
