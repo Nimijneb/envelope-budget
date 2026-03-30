@@ -119,7 +119,11 @@ export function Dashboard() {
 
         <div className="mb-6 rounded-2xl border border-border bg-gradient-to-br from-card to-accent-dim/30 p-4 shadow-sm neon-hero-total sm:mb-8 sm:p-6">
           <p className="text-sm font-medium text-muted">Total across envelopes</p>
-          <p className="font-display mt-1 text-3xl font-semibold tracking-tight text-ink tabular-nums sm:text-4xl">
+          <p
+            className={`font-display mt-1 text-3xl font-semibold tracking-tight tabular-nums sm:text-4xl ${
+              total < 0 ? "text-warm" : "text-ink"
+            }`}
+          >
             {formatMoney(total)}
           </p>
         </div>
@@ -262,7 +266,11 @@ export function Dashboard() {
                     </div>
                     <div className="flex shrink-0 items-baseline justify-between gap-4 border-t border-border pt-3 sm:border-t-0 sm:pt-0 sm:text-right">
                       <span className="text-xs text-muted sm:hidden">Balance</span>
-                      <p className="font-display text-xl font-semibold tabular-nums text-ink sm:text-2xl">
+                      <p
+                        className={`font-display text-xl font-semibold tabular-nums sm:text-2xl ${
+                          env.balance_cents < 0 ? "text-warm" : "text-ink"
+                        }`}
+                      >
                         {formatMoney(env.balance_cents)}
                       </p>
                     </div>

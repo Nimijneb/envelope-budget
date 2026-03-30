@@ -570,7 +570,11 @@ export function EnvelopeDetail() {
               <p className="text-xs font-medium uppercase tracking-wide text-muted">
                 Current balance
               </p>
-              <p className="font-display mt-1 text-3xl font-semibold tabular-nums text-ink sm:text-4xl">
+              <p
+                className={`font-display mt-1 text-3xl font-semibold tabular-nums sm:text-4xl ${
+                  envelope.balance_cents < 0 ? "text-warm" : "text-ink"
+                }`}
+              >
                 {formatMoney(envelope.balance_cents)}
               </p>
             </div>
